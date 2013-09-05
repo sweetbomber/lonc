@@ -1,0 +1,125 @@
+
+    
+    Copyright 2013 sweetbomber (ffrogger0@yahoo.com)
+
+    This file is part of the Library of Online-Codes (LOnC).
+
+    The Library of Online-Codes is free software:
+		you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    The Library of Online-Codes is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with the Library of Online-Codes.
+    If not, see <http://www.gnu.org/licenses/>.
+
+--------------------------------------------------------------------------------------------------
+
+The Library of Online-Codes
+''''''''''''''''''''''''''''''''''''''''''''''''''''''
+
+1. Introduction
+'''''''''''''''''''''''''''''
+This library is intended to implement an encoder/decoder pair
+using online codes, as described by the papers:
+
+Maymounkov, Petar; Mazières, David; "Rateless Codes and Big Downloads",
+Second International Workshop on Peer-to-peer Systems, 2003.
+(URL: http://pdos.csail.mit.edu/~petar/papers/maymounkov-bigdown-lncs.ps)
+
+Maymounkov, Petar; "Online codes", New York University Technical Report, 2002.
+(URL: http://pdos.csail.mit.edu/~petar/papers/maymounkov-online.pdf)
+
+This implementation is still incomplete, and is far from reliable.
+I strongly discourage anyone on using it as is.
+
+Please wait for further releases, or contribute!
+
+2. Code structure
+'''''''''''''''''''''''''''''
+The main code is basically structured in two classes: OcdEncoder and OcdDecoder.
+
+I tried to make the usage as straightforward as possible.
+
+	2.1 Encoder
+	'''''''''''''''''''''''''''
+	Basically, for encoding, you need to provide the encoder with an input
+	buffer and some parameters, and then ask the encoder to generate as 
+	many blocks as you see fit.
+
+	All the parameters are passed to the constructor.
+  
+	  OcdEncoder encoder(inputBuffer, inputBufferSize, blockSize, q, epsilon);
+
+		- inputBuffer and inputBufferSize: 
+					pointer to buffer (uint8_t *) and its size (uint32_t)
+
+		- blockSize:
+					default size of each block. A block is the minimum allowable unit of "erasure".
+
+		- q and epsilon:
+					refer to cited papers
+
+	At this point, all you need is to request checkBlocks.
+
+		Encode(uint8_t *checkBlock, blockID_t blockID);
+
+		- checkBlock:
+					pointer to the receiving buffer. It must hold 'blockSize' (remember?) bytes
+
+		- blockID:
+					The encoder needs a blockID to generate the block.
+					That same blockID must be given when decoding that same block. Consider it side information
+					and send it along with the checkBlock how you see fit.
+
+	To aid the generation of a blockID, a generator is provided. To use it, seed it with something and then reuse
+	the previous output to get the next BlockID.
+
+	blockID = encoder.GenerateBlockID(time(NULL));
+	
+	blockID = encoder.GenerateBlockID((uint32_t) blockID);
+											....
+	blockID = encoder.GenerateBlockID((uint32_t) blockID);
+
+
+	2.2 Decoder
+	'''''''''''''''''''''''''''
+	The decoder requires the size of the data, the blockSize, and the q and epsilon parameters
+
+		OcdDecoder(uint32_t dataSize, uint32_t blockSize, uint32_t q, double epsilon);
+
+	To decode a block, just call Decode, providing the checkBlock buffer, and the
+	corresponding blockID.
+
+		uint32_t Decode(uint8_t *checkBlock, blockID_t blockID);
+
+	To inspect how is the decoding process going, you may call GetNumberOfRemainingBlocks(),
+	which returns the number of unsolved blocks.
+
+	When such function returns 0, it means that the decoding process is finished, and you
+	may request the decoder to copy the decoded data to a user-provided buffer.
+
+		void FinishDecoding(uint8_t *outputBuffer);
+
+	And its all!
+
+3. How to build
+'''''''''''''''''''''''''''''
+To build the example, just type make
+
+4. Files
+'''''''''''''''''''''''''''''
+Here you may find a description for each file:
+
+codec.h     - shared header
+common.cpp  - base class code (decoder and encoder both inherit the base class)
+decoder.cpp - decoder class
+encoder.cpp - encoder class
+main.cpp    - minimal functional example (just a crapy example to show stuff working)
+
